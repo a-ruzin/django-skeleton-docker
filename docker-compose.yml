@@ -1,0 +1,43 @@
+version: '3'
+services:
+  db: # -----------------------------------------------------------------------
+    image: postgres:13.3-alpine
+    volumes:
+      - ./deploy/data/db:/var/lib/postgresql/data
+      - ./deploy/data/backup/db:/var/lib/backup/data
+      - ./db/bin:/var/lib/backup/bin
+    env_file:
+      - ./deploy/envs/postgres.env
+
+  nginx: # --------------------------------------------------------------------
+    image: ghcr.io/kokocgroup/mptrends-nginx:latest
+    build:
+      dockerfile: Dockerfile
+      context: nginx
+    depends_on:
+      - backend
+      - static
+
+  backend: # ------------------------------------------------------------------
+    image: ghcr.io/kokocgroup/mptrends-backend:latest
+    build:
+      dockerfile: Dockerfile
+      context: backend
+    depends_on:
+      - db
+    env_file:
+      - ./deploy/envs/postgres.env
+      - ./deploy/envs/backend.env
+    volumes:
+      - ./deploy/logs/backend:/app/logs
+      - ./deploy/data/backend/media:/app/media
+      - ./deploy/data/backend/static:/app/static
+
+  static: # -------------------------------------------------------------------
+    image: ghcr.io/kokocgroup/mptrends-backend-static:latest
+    build:
+      dockerfile: Dockerfile
+      context: backend-static
+    volumes:
+       - ./deploy/data/backend/media/public:/www/media
+       - ./deploy/data/backend/static:/www/static

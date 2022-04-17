@@ -1,0 +1,26 @@
+version: '3'
+services:
+  db: # -----------------------------------------------------------------------
+    ports:
+      - "5432:5432"
+
+  nginx: # --------------------------------------------------------------------
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy/nginx/.htpasswd:/etc/nginx/.htpasswd
+
+  backend: # ------------------------------------------------------------------
+    volumes:
+      - ./backend:/app
+#    env_file:
+#      - ./deploy/envs/postgres.env.prod.env
+    command:
+      sh -c './manage.py collectstatic --noinput ; ./manage.py runserver 0.0.0.0:8000'
+    build:
+      args:
+        PIPENV_OPTIONS: --dev
+
+  static: # ------------------------------------------------------------------
+    volumes:
+      - ./frontend/build:/www/static/main/frontend
